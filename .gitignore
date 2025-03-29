@@ -8,8 +8,8 @@ build/
 out/
 
 01.standardization/
-02.standardization/
-03.standardization/
+02.abbr_expansion/
+03.model_mapping/
 
 # Logs
 logs
@@ -17,6 +17,7 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+notes.txt
 
 # Runtime data
 pids
