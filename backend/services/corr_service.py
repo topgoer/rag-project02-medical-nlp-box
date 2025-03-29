@@ -1,136 +1,185 @@
 from langchain_community.llms import Ollama
+from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
+from typing import Dict
 from utils.processing import extract_sentences, save_model_output
 from datetime import datetime
 import random
 import re
+import os
+import logging
 
-# function to introduce typos based on keyboard proximity
-def butterfinger(text,prob=0.2,keyboard='querty'):
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-	keyApprox = {}
-	
-	if keyboard == "querty":
-		keyApprox['q'] = "wasedzx"
-		keyApprox['w'] = "qesadrfcx"
-		keyApprox['e'] = "wrsfdqazxcvgt"
-		keyApprox['r'] = "etdgfwsxcvgt"
-		keyApprox['t'] = "ryfhgedcvbnju"
-		keyApprox['y'] = "tugjhrfvbnji"
-		keyApprox['u'] = "yihkjtgbnmlo"
-		keyApprox['i'] = "uojlkyhnmlp"
-		keyApprox['o'] = "ipklujm"
-		keyApprox['p'] = "lo['ik"
-
-		keyApprox['a'] = "qszwxwdce"
-		keyApprox['s'] = "wxadrfv"
-		keyApprox['d'] = "ecsfaqgbv"
-		keyApprox['f'] = "dgrvwsxyhn"
-		keyApprox['g'] = "tbfhedcyjn"
-		keyApprox['h'] = "yngjfrvkim"
-		keyApprox['j'] = "hknugtblom"
-		keyApprox['k'] = "jlinyhn"
-		keyApprox['l'] = "okmpujn"
-
-		keyApprox['z'] = "axsvde"
-		keyApprox['x'] = "zcsdbvfrewq"
-		keyApprox['c'] = "xvdfzswergb"
-		keyApprox['v'] = "cfbgxdertyn"
-		keyApprox['b'] = "vnghcftyun"
-		keyApprox['n'] = "bmhjvgtuik"
-		keyApprox['m'] = "nkjloik"
-		keyApprox[' '] = " "
-	else:
-		print("Keyboard not supported.")
-
-	probOfTypoArray = []
-	probOfTypo = int(prob * 100)
-
-	buttertext = ""
-
-	# added to ensure max of 2 wrong chars
-	errors = 0
-
-	for letter in text:
-		lcletter = letter.lower()
-		if not lcletter in keyApprox.keys():
-			newletter = lcletter
-		else:
-			# ensure no more than 2 errors
-			if random.choice(range(0, 100)) <= probOfTypo and errors < 1:
-				errors += 1
-				if random.choice(range(0, 100)) <= 80:
-					newletter = random.choice(keyApprox[lcletter])
-				# add 50% prob of dropping chars
-				else:
-					# print("skipping! ", text)
-					continue
-			else:
-				newletter = lcletter
-		# go back to original case
-		if not lcletter == letter:
-			newletter = newletter.upper()
-		buttertext += newletter
-
-	return buttertext
-
-
-def has_slash_or_two_or_more_uppercase(word):
-    # Regular expression to match words with a '/' or two or more uppercase letters
-    # pattern = re.compile(r'.*[/].*|.*[A-Z].*[A-Z].*')
-    pattern = re.compile(r'\b\w{5,}/\w{5,}\b|\b(?:\w*[A-Z]){2,}\w*\b')
-
-    
-    # Check if the word matches the pattern
-    return bool(pattern.match(word))
-
-
-# method to introduce spelling mistakes to sentence (uses butterfinger function above)
-def add_mistakes(text):
-    words = text.split()
-    mistake = ""
-
-    errors = 0
-    for word in words:
-        # randomly select no more than 5 words to generate mispellings
-        # if word is not abbrev, introduce spelling errors (using heuristic)
-            # abbreviations usually fewer than 4 characters long (e.g pt, hiv)
-            # or has slashes (e.g h/o, n/v) and is longer than 4 chars
-            # or has caps
-        probOfTypo = int(0.3 * 100) # set prob of error to be 0.3
-        if errors < 5 and random.choice(range(0, 100)) <= probOfTypo and (len(word) >= 4 and not has_slash_or_two_or_more_uppercase(word) and word != "___"):
-            mistake += butterfinger(word) + " "
-            errors += 1
+class CorrService:
+    def __init__(self):
+        self.keyboard_layouts = {
+            'querty': {
+                'q': "wasedzx",
+                'w': "qesadrfcx",
+                'e': "wrsfdqazxcvgt",
+                'r': "etdgfwsxcvgt",
+                't': "ryfhgedcvbnju",
+                'y': "tugjhrfvbnji",
+                'u': "yihkjtgbnmlo",
+                'i': "uojlkyhnmlp",
+                'o': "ipklujm",
+                'p': "lo['ik",
+                'a': "qszwxwdce",
+                's': "wxadrfv",
+                'd': "ecsfaqgbv",
+                'f': "dgrvwsxyhn",
+                'g': "tbfhedcyjn",
+                'h': "yngjfrvkim",
+                'j': "hknugtblom",
+                'k': "jlinyhn",
+                'l': "okmpujn",
+                'z': "axsvde",
+                'x': "zcsdbvfrewq",
+                'c': "xvdfzswergb",
+                'v': "cfbgxdertyn",
+                'b': "vnghcftyun",
+                'n': "bmhjvgtuik",
+                'm': "nkjloik",
+                ' ': " "
+            }
+        }
+        
+    def _get_llm(self, llm_options: dict):
+        """Get LLM based on provider and model"""
+        provider = llm_options.get("provider", "ollama")
+        model = llm_options.get("model", "llama3.1:8b")
+        
+        if provider == "ollama":
+            return Ollama(model=model)
+        elif provider == "openai":
+            return ChatOpenAI(
+                model=model,
+                temperature=0,
+                api_key=os.getenv("OPENAI_API_KEY")
+            )
         else:
-            mistake += word + " "
-
-    return mistake.strip()
-
-
-# method to correct spelling errors within a sentence
-def correct_spelling(text, model_name):
-
-    llm = Ollama(model=model_name)
-
-    spelling_correction_prompt_template = ChatPromptTemplate.from_messages(
-        [
+            raise ValueError(f"Unsupported LLM provider: {provider}")
+    
+    def _has_slash_or_uppercase(self, word: str) -> bool:
+        """检测单词是否包含斜杠或多个大写字母（可能是缩写）"""
+        pattern = re.compile(r'\b\w{5,}/\w{5,}\b|\b(?:\w*[A-Z]){2,}\w*\b')
+        return bool(pattern.match(word))
+    
+    def _butterfinger(self, text: str, prob: float = 0.2, keyboard: str = 'querty') -> str:
+        """为单词引入打字错误"""
+        if keyboard not in self.keyboard_layouts:
+            logger.warning(f"Keyboard layout {keyboard} not supported, using querty")
+            keyboard = 'querty'
+            
+        key_approx = self.keyboard_layouts[keyboard]
+        prob_of_typo = int(prob * 100)
+        
+        buttertext = ""
+        errors = 0
+        
+        for letter in text:
+            lcletter = letter.lower()
+            if lcletter not in key_approx:
+                newletter = lcletter
+            else:
+                # 确保不超过1个错误
+                if random.choice(range(0, 100)) <= prob_of_typo and errors < 1:
+                    errors += 1
+                    if random.choice(range(0, 100)) <= 80:
+                        newletter = random.choice(key_approx[lcletter])
+                    else:
+                        # 有20%概率跳过字符
+                        continue
+                else:
+                    newletter = lcletter
+                    
+            # 保持原始大小写
+            if lcletter != letter:
+                newletter = newletter.upper()
+                
+            buttertext += newletter
+            
+        return buttertext
+        
+    def correct_spelling(self, text: str, llm_options: dict) -> Dict:
+        """纠正拼写错误方法"""
+        llm = self._get_llm(llm_options)
+        
+        prompt = ChatPromptTemplate.from_messages([
             ("system", "Your job is to return the input with ALL spelling errors corrected. DO NOT expand any abbreviations."),
             ("system", "Input consist of clinical notes. Keep all occurrences of ___ in the output."),
             ("system", "Do NOT include supplementary messages like -> Here is the corrected input. Return the corrected input only."),
             ("human", "{input}"),
-        ]
-    )
+        ])
+        
+        chain = prompt | llm
+        result = chain.invoke({"input": text})
+        
+        # 处理可能的AIMessage对象
+        corrected_text = result.content if hasattr(result, 'content') else str(result)
+        
+        return {
+            "input": text,
+            "corrected_text": corrected_text
+        }
+        
+    def add_mistakes(self, text: str, error_options: dict) -> Dict:
+        """故意添加拼写错误（用于测试）"""
+        probability = error_options.get("probability", 0.3)
+        max_errors = error_options.get("maxErrors", 5)
+        keyboard = error_options.get("keyboard", "querty")
+        
+        words = text.split()
+        mistake_text = ""
+        
+        errors = 0
+        for word in words:
+            # 如果不是缩写，长度>=4，并且错误数小于最大值，则添加错误
+            prob_of_typo = int(probability * 100)
+            if (errors < max_errors and 
+                random.choice(range(0, 100)) <= prob_of_typo and 
+                len(word) >= 4 and 
+                not self._has_slash_or_uppercase(word) and 
+                word != "___"):
+                
+                mistake_text += self._butterfinger(word, probability, keyboard) + " "
+                errors += 1
+            else:
+                mistake_text += word + " "
+                
+        mistake_text = mistake_text.strip()
+        
+        return {
+            "input": text,
+            "text_with_errors": mistake_text,
+            "errors_added": errors
+        }
 
-    chain = spelling_correction_prompt_template | llm
-    response = chain.invoke({
-        "input" : text
-    })
+# 以下函数保留为向后兼容，但不在新UI中使用
+def butterfinger(text, prob=0.2, keyboard='querty'):
+    service = CorrService()
+    return service._butterfinger(text, prob, keyboard)
 
-    return response
+def has_slash_or_two_or_more_uppercase(word):
+    service = CorrService()
+    return service._has_slash_or_uppercase(word)
 
+def add_mistakes(text):
+    service = CorrService()
+    result = service.add_mistakes(text, {"probability": 0.3, "maxErrors": 5})
+    return result["text_with_errors"]
 
-# method to test spelling correction
+def correct_spelling(text, model_name):
+    service = CorrService()
+    result = service.correct_spelling(text, {"provider": "ollama", "model": model_name})
+    return result["corrected_text"]
+
 def generate_spellCorr_samples(dataset_path, headers, samples, model_name, save_path):
+    """保留以前的函数用于兼容性"""
+    from utils.processing import extract_sentences, save_model_output
+    from datetime import datetime
     
     # get list of sentences from notes
     sentences = extract_sentences(dataset_path, headers, samples)

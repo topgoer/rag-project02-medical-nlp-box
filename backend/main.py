@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from services.ner_service import NERService
 from services.std_service import StdService
 from services.abbr_service import AbbrService
-from services.corr_service import correct_spelling
+from services.corr_service import CorrService
 # from services.model_map_service import ModelMapService
 from services.gen_service import GenService
 from typing import List, Dict
@@ -29,6 +29,7 @@ standardization_service = StdService()
 # model_map_service = ModelMapService()
 abbr_service = AbbrService()
 gen_service = GenService()
+corr_service = CorrService()
 
 class TextInput(BaseModel):
     text: str
@@ -81,6 +82,19 @@ class GenInput(BaseModel):
         "model": "llama3.1:8b"
     }
 
+class CorrInput(BaseModel):
+    text: str
+    method: str = "correct_spelling"
+    llmOptions: dict = {
+        "provider": "ollama",
+        "model": "qwen2.5:7b"
+    }
+    errorOptions: dict = {
+        "probability": 0.3,
+        "maxErrors": 5,
+        "keyboard": "querty"
+    }
+
 @app.post("/api/ner")
 async def ner(input: TextInput):
     try:
@@ -92,13 +106,14 @@ async def ner(input: TextInput):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/corr")
-async def correct_notes(input: TextInput):
+async def correct_notes(input: CorrInput):
     try:
-        output = correct_spelling(input.text, model_name="llama3.1:8b")  
-        return {
-            "input": input.text,
-            "output": output
-        }
+        if input.method == "correct_spelling":
+            return corr_service.correct_spelling(input.text, input.llmOptions)
+        elif input.method == "add_mistakes":
+            return corr_service.add_mistakes(input.text, input.errorOptions)
+        else:
+            raise HTTPException(status_code=400, detail="Invalid method")
     except Exception as e:
         logger.error(f"Error in correction processing: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))

@@ -26,7 +26,7 @@ embedding_function = model.dense.SentenceTransformerEmbeddingFunction(
 # embedding_function = model.dense.OpenAIEmbeddingFunction(model_name='text-embedding-3-large')
 
 # 文件路径
-file_path = "/home/huangj2/Documents/RAG_P2_医疗名词/01.standardization/data/SNOMED-CT/SNOMED_valid_comma.csv"
+file_path = "/home/huangj2/Documents/RAG_P2_医疗名词/01.standardization/data/SNOMED-CT/SNOMED_valid_with_synonym_comma.csv"
 # db_path = "./snomed_syn_mpnet-base-v2.db"
 # db_path = "/home/huangj2/Documents/evyd-wp1/backend/db/snomed_e5_large.db"
 # db_path = "/home/huangj2/Documents/evyd-wp1/backend/db/snomed_qwen2_1b.db"
@@ -37,15 +37,15 @@ db_path = "/home/huangj2/Documents/RAG_P2_医疗名词/backend/db/snomed_bge_m3.
 # 连接到 Milvus
 client = MilvusClient(db_path)
 
-collection_name = "concepts_only_name"
-# collection_name = "concepts_with_synonym"
+# collection_name = "concepts_only_name"
+collection_name = "concepts_with_synonym"
 
 # 加载数据
 logging.info("Loading data from CSV")
 df = pd.read_csv(file_path, 
                 #  delimiter='\t', 
                  dtype=str, 
-                #  nrows=2
+                low_memory=False,
                  ).fillna("NA")
 
 # 获取向量维度（使用一个样本文档）
@@ -68,7 +68,7 @@ fields = [
     FieldSchema(name="valid_end_date", dtype=DataType.VARCHAR, max_length=10),
     # FieldSchema(name="invalid_reason", dtype=DataType.VARCHAR, max_length=1),    
     # FieldSchema(name="full_name", dtype=DataType.VARCHAR, max_length=500),
-    # FieldSchema(name="synonyms", dtype=DataType.VARCHAR, max_length=1000),
+    FieldSchema(name="synonyms", dtype=DataType.VARCHAR, max_length=1000),
     # FieldSchema(name="definitions", dtype=DataType.VARCHAR, max_length=1000),
     FieldSchema(name="input_file", dtype=DataType.VARCHAR, max_length=500),
 ]
@@ -115,8 +115,8 @@ for start_idx in tqdm(range(0, len(df), batch_size), desc="Processing batches"):
         # if row['Full Name'] != "NA" and row['Full Name'] != row['concept_name']:
         #     doc_parts.append(",Full Name: " + row['Full Name'])
 
-        # if row['Synonyms'] != "NA" and row['Synonyms'] != row['concept_name']:
-        #     doc_parts.append(", Synonyms: " + row['Synonyms'])
+        if row['Synonyms'] != "NA" and row['Synonyms'] != row['concept_name']:
+            doc_parts.append(", Synonyms: " + row['Synonyms'])
 
         # if row['Definitions'] != "NA" and row['Definitions'] not in [row['concept_name'], row.get('Full Name', '')]:
         #     doc_parts.append(", Definitions: " + row['Definitions'])
@@ -148,7 +148,7 @@ for start_idx in tqdm(range(0, len(df), batch_size), desc="Processing batches"):
             "valid_end_date": str(row['valid_end_date']),
             # "invalid_reason": str(row['invalid_reason']),
             # "full_name": str(row['Full Name']),
-            # "synonyms": str(row['Synonyms']),
+            "synonyms": str(row['Synonyms']),
             # "definitions": str(row['Definitions']),
             "input_file": file_path
         } for idx, (_, row) in enumerate(batch_df.iterrows())
@@ -167,7 +167,8 @@ for start_idx in tqdm(range(0, len(df), batch_size), desc="Processing batches"):
 logging.info("Insert process completed.")
 
 # 示例查询
-query = "somatic hallucination"
+# query = "somatic hallucination"
+query = "SOB"
 query_embeddings = embedding_function([query])
 
 
@@ -177,7 +178,7 @@ search_result = client.search(
     data=[query_embeddings[0].tolist()],
     limit=5,
     output_fields=["concept_name", 
-                #    "synonyms", 
+                   "synonyms", 
                    "concept_class_id", 
                    ]
 )
@@ -188,7 +189,7 @@ query_result = client.query(
     collection_name=collection_name,
     filter="concept_name == 'Dyspnea'",
     output_fields=["concept_name", 
-                #    "synonyms", 
+                   "synonyms", 
                    "concept_class_id", 
                    ],
     limit=5

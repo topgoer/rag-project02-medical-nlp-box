@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AlertCircle } from 'lucide-react';
 
 const GenPage = () => {
   // 基础状态
@@ -59,7 +60,7 @@ const GenPage = () => {
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/gen', {
+      const response = await fetch('http://172.20.116.213:8000/api/gen', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -246,6 +247,11 @@ const GenPage = () => {
           </div>
         </div>
       )}
+
+      <div className="flex items-center text-yellow-700 bg-yellow-100 p-4 rounded-md mt-6">
+        <AlertCircle className="mr-2" />
+        <span>这是演示版本, 并非所有功能都可以正常工作。更多功能需要您来增强并实现。</span>
+      </div>
     </div>
   );
 };

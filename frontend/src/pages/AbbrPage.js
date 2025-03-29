@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AlertCircle } from 'lucide-react';
 
 const AbbrPage = () => {
   const [input, setInput] = useState('');
@@ -50,7 +51,7 @@ const AbbrPage = () => {
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/abbr', {
+      const response = await fetch('http://172.20.116.213:8000/api/abbr', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,7 +83,7 @@ const AbbrPage = () => {
           <h2 className="text-xl font-semibold mb-4">输入医疗记录</h2>
           <textarea
             className="w-full p-2 border rounded-md mb-4"
-            rows="4"
+            rows="6"
             placeholder="请输入包含缩写的医疗记录..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -218,6 +219,11 @@ const AbbrPage = () => {
           </div>
         </div>
       )}
+
+      <div className="flex items-center text-yellow-700 bg-yellow-100 p-4 rounded-md mt-6">
+        <AlertCircle className="mr-2" />
+        <span>这是演示版本, 并非所有功能都可以正常工作。更多功能需要您来增强并实现。</span>
+      </div>
     </div>
   );
 };
