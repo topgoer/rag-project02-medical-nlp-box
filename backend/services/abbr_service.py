@@ -2,7 +2,7 @@ from langchain_community.llms import Ollama
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from typing import List, Dict
-from std_service import StdService
+from services.std_service import StdService
 import os
 import logging
 

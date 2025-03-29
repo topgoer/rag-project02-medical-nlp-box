@@ -17,7 +17,7 @@ const AbbrPage = () => {
   // LLM options
   const [llmOptions, setLlmOptions] = useState({
     provider: 'ollama',
-    model: 'llama3.1:8b'
+    model: 'qwen2.5:7b'
   });
   const llmProviders = {
     ollama: 'Ollama',
@@ -26,13 +26,10 @@ const AbbrPage = () => {
 
   // Vector DB options (reusing from StandardizationPage)
   const [embeddingOptions, setEmbeddingOptions] = useState({
-    provider: 'openai',
-    model: 'text-embedding-3-large',
-    dbName: 'icd10-terms-only',
-    collectionName: 'openai_3_large'
-    // model: 'text-embedding-3-small',  // 改为 3-small
-    // dbName: 'snomed_syn',             // 改为 snomed_syn
-    // collectionName: 'concepts_with_desc_n_synonyms'  // 改为实际的集合名称    
+    provider: 'huggingface',
+    model: 'intfloat/multilingual-e5-large-instruct',
+    dbName: 'snomed_e5_large',
+    collectionName: 'concepts_only_name'
   });
 
   const handleLlmOptionChange = (e) => {

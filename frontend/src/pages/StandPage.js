@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const StandardizationPage = () => {
+const StandPage = () => {
   const [input, setInput] = useState('');
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
@@ -22,10 +22,10 @@ const StandardizationPage = () => {
   });
 
   const [embeddingOptions, setEmbeddingOptions] = useState({
-    provider: 'openai',
-    model: 'text-embedding-3-large',
-    dbName: 'icd10-terms-only',
-    collectionName: 'openai_3_large'
+    provider: 'huggingface',
+    model: 'intfloat/multilingual-e5-large-instruct',
+    dbName: 'snomed_e5_large',
+    collectionName: 'concepts_only_name'
   });
 
   const handleOptionChange = (e) => {
@@ -244,4 +244,4 @@ const StandardizationPage = () => {
   );
 };
 
-export default StandardizationPage;
+export default StandPage;

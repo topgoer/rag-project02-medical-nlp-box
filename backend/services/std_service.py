@@ -56,7 +56,7 @@ class StdService:
             "limit": 5,
         }
         
-        if 'snomed_syn' in self.db_name:
+        if 'snomed' in self.db_name:
             search_params["output_fields"] = [
                 "concept_id", "concept_name", "domain_id", 
                 "vocabulary_id", "concept_class_id", "standard_concept",
@@ -72,7 +72,7 @@ class StdService:
 
         results = []
         for hit in search_result[0]:
-            if 'snomed_syn' in self.db_name:
+            if 'snomed' in self.db_name:
                 results.append({
                     "concept_id": hit['entity'].get('concept_id'),
                     "concept_name": hit['entity'].get('concept_name'),

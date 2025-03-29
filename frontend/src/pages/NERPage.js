@@ -221,7 +221,7 @@ const NERPage = () => {
       )}
       <div className="flex items-center text-yellow-700 bg-yellow-100 p-4 rounded-md">
         <AlertCircle className="mr-2" />
-        <span>这是演示版本。实际的命名实体识别功能将在未来实现。</span>
+        <span>这是演示版本。更多实用的命名实体识别功能将在未来实现。</span>
       </div>
     </div>
   );

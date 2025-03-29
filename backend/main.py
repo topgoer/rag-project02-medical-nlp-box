@@ -1,11 +1,13 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from ner_service import NERService
-from std_service import StdService
-from abbr_service import AbbrService
-from model_map_service import ModelMapService
-from typing import List
+from services.ner_service import NERService
+from services.std_service import StdService
+from services.abbr_service import AbbrService
+from services.corr_service import correct_spelling
+# from services.model_map_service import ModelMapService
+from services.gen_service import GenService
+from typing import List, Dict
 import logging
 
 logging.basicConfig(level=logging.INFO)
@@ -24,8 +26,9 @@ app.add_middleware(
 
 ner_service = NERService()
 standardization_service = StdService()
-model_map_service = ModelMapService()
+# model_map_service = ModelMapService()
 abbr_service = AbbrService()
+gen_service = GenService()
 
 class TextInput(BaseModel):
     text: str
@@ -67,6 +70,17 @@ class AbbrInput(BaseModel):
         "collectionName": "openai_3_large"
     }
 
+class GenInput(BaseModel):
+    patient_info: Dict
+    symptoms: List[str]
+    diagnosis: str = ""
+    treatment: str = ""
+    method: str = "generate_medical_note"
+    llmOptions: dict = {
+        "provider": "ollama",
+        "model": "llama3.1:8b"
+    }
+
 @app.post("/api/ner")
 async def ner(input: TextInput):
     try:
@@ -80,7 +94,6 @@ async def ner(input: TextInput):
 @app.post("/api/corr")
 async def correct_notes(input: TextInput):
     try:
-        from corr_service import correct_spelling
         output = correct_spelling(input.text, model_name="llama3.1:8b")  
         return {
             "input": input.text,
@@ -159,34 +172,62 @@ async def expand_abbreviations(input: AbbrInput):
         logger.error(f"Error in abbreviation expansion: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/parse-schema")
-async def parse_schema(input: SchemaInput):
-    try:
-        schema = model_map_service.parse_schema(input.csv, input.fileName)
-        return schema
-    except Exception as e:
-        logger.error(f"Error parsing schema: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+# @app.post("/api/parse-schema")
+# async def parse_schema(input: SchemaInput):
+#     try:
+#         schema = model_map_service.parse_schema(input.csv, input.fileName)
+#         return schema
+#     except Exception as e:
+#         logger.error(f"Error parsing schema: {str(e)}")
+#         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/generate-mapping")
-async def generate_mapping(input: MappingInput):
-    try:
-        mapping = model_map_service.generate_mapping(
-            input.targetSchema,
-            input.sourceSchemas
-        )
-        return mapping
-    except Exception as e:
-        logger.error(f"Error generating mapping: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+# @app.post("/api/generate-mapping")
+# async def generate_mapping(input: MappingInput):
+#     try:
+#         mapping = model_map_service.generate_mapping(
+#             input.targetSchema,
+#             input.sourceSchemas
+#         )
+#         return mapping
+#     except Exception as e:
+#         logger.error(f"Error generating mapping: {str(e)}")
+#         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/generate-sql")
-async def generate_sql(input: MappingResult):
+# @app.post("/api/generate-sql")
+# async def generate_sql(input: MappingResult):
+#     try:
+#         sql = model_map_service.generate_sql(input.mapping)
+#         return {"sql": sql}
+#     except Exception as e:
+#         logger.error(f"Error generating SQL: {str(e)}")
+#         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/gen")
+async def generate_medical_content(input: GenInput):
     try:
-        sql = model_map_service.generate_sql(input.mapping)
-        return {"sql": sql}
+        if input.method == "generate_medical_note":
+            return gen_service.generate_medical_note(
+                input.patient_info,
+                input.symptoms,
+                input.diagnosis,
+                input.treatment,
+                input.llmOptions
+            )
+        elif input.method == "generate_differential_diagnosis":
+            return gen_service.generate_differential_diagnosis(
+                input.symptoms,
+                input.llmOptions
+            )
+        elif input.method == "generate_treatment_plan":
+            return gen_service.generate_treatment_plan(
+                input.diagnosis,
+                input.patient_info,
+                input.llmOptions
+            )
+        else:
+            raise HTTPException(status_code=400, detail="Invalid method")
     except Exception as e:
-        logger.error(f"Error generating SQL: {str(e)}")
+        logger.error(f"Error in medical content generation: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
