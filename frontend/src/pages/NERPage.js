@@ -196,9 +196,10 @@ const NERPage = () => {
 
         <button
           onClick={handleSubmit}
-          className="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600"
+          disabled={isLoading}
+          className={`bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          识别实体
+          {isLoading ? '处理中...' : '识别实体'}
         </button>
       </div>
       {coloredResult && (

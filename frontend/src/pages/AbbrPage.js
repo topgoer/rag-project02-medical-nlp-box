@@ -27,8 +27,8 @@ const AbbrPage = () => {
   // Vector DB options (reusing from StandardizationPage)
   const [embeddingOptions, setEmbeddingOptions] = useState({
     provider: 'huggingface',
-    model: 'intfloat/multilingual-e5-large-instruct',
-    dbName: 'snomed_e5_large',
+    model: 'BAAI/bge-m3',
+    dbName: 'snomed_bge_m3',
     collectionName: 'concepts_only_name'
   });
 

@@ -38,9 +38,10 @@ const CorrPage = () => {
         />
         <button
           onClick={handleSubmit}
-          className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600"
+          disabled={isLoading}
+          className={`bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
-          纠正记录
+          {isLoading ? '处理中...' : '纠正记录'}
         </button>
       </div>
       {result && (
