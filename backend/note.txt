@@ -1,0 +1,6 @@
+创建环境示例（不可照搬照抄）
+python3 -m venv /mnt/external_disk/venv/2025_Domain_Terms
+source /mnt/external_disk/venv/2025_Domain_Terms/bin/activate
+pip install -r requirements.txt
+
+uvicorn main:app --reload
