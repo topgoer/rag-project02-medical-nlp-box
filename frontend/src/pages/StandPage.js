@@ -24,9 +24,9 @@ const StandPage = () => {
 
   const [embeddingOptions, setEmbeddingOptions] = useState({
     provider: 'huggingface',
-    model: 'intfloat/multilingual-e5-large-instruct',
-    dbName: 'snomed_e5_large',
-    collectionName: 'concepts_only_name'
+    model: 'intfloat/multilingual-e5-large-instruct', // BGE-m3
+    dbName: 'snomed_bge_m3',
+    collectionName: 'concepts_with_synonym'
   });
 
   const handleOptionChange = (e) => {

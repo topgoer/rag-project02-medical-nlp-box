@@ -16,10 +16,10 @@ class AbbrService:
     def _get_std_service(self, embedding_options: dict) -> StdService:
         """Get or create StdService with specified options"""
         return StdService(
-            provider=embedding_options.get("provider", "openai"),
-            model=embedding_options.get("model", "text-embedding-3-large"),
-            db_path=f"db/{embedding_options.get('dbName', 'icd10-terms-only')}.db",
-            collection_name=embedding_options.get("collectionName", "openai_3_large")
+            provider=embedding_options.get("provider", "huggingface"),
+            model=embedding_options.get("model", "BAAI/bge-m3"),
+            db_path=f"db/{embedding_options.get('dbName', 'snomed_bge_m3')}.db",
+            collection_name=embedding_options.get("collectionName", "concepts_only_name")
         )
 
     def _get_llm(self, llm_options: dict):

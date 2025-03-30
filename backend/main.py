@@ -36,10 +36,10 @@ class TextInput(BaseModel):
     options: dict = {}
     termTypes: dict = {}
     embeddingOptions: dict = {
-        "provider": "openai",
-        "model": "text-embedding-3-large",
-        "dbName": "icd10-terms-only",
-        "collectionName": "openai_3_large"
+        "provider": "huggingface",
+        "model": "BAAI/bge-m3",
+        "dbName": "snomed_bge_m3",
+        "collectionName": "concepts_only_name"
     }
 
 class QueryInput(BaseModel):
@@ -65,10 +65,10 @@ class AbbrInput(BaseModel):
         "model": "llama3.1:8b"
     }
     embeddingOptions: dict = {
-        "provider": "openai",
-        "model": "text-embedding-3-large",
-        "dbName": "icd10-terms-only",
-        "collectionName": "openai_3_large"
+        "provider": "huggingface",
+        "model": "BAAI/bge-m3",
+        "dbName": "snomed_bge_m3",
+        "collectionName": "concepts_only_name"
     }
 
 class GenInput(BaseModel):
@@ -131,10 +131,10 @@ async def standardization(input: TextInput):
 
         # 创建标准化服务实例，使用传入的嵌入选项
         standardization_service = StdService(
-            provider=input.embeddingOptions.get("provider", "openai"),
-            model=input.embeddingOptions.get("model", "text-embedding-3-large"),
-            db_path=f"db/{input.embeddingOptions.get('dbName', 'icd10-terms-only')}.db",
-            collection_name=input.embeddingOptions.get("collectionName", "openai_3_large")
+            provider=input.embeddingOptions.get("provider", "huggingface"),
+            model=input.embeddingOptions.get("model", "BAAI/bge-m3"),
+            db_path=f"db/{input.embeddingOptions.get('dbName', 'snomed_bge_m3')}.db",
+            collection_name=input.embeddingOptions.get("collectionName", "concepts_only_name")
         )
 
         # Ensure ner_results is a list of entities

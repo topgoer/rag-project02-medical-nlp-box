@@ -26,24 +26,18 @@ embedding_function = model.dense.SentenceTransformerEmbeddingFunction(
 # embedding_function = model.dense.OpenAIEmbeddingFunction(model_name='text-embedding-3-large')
 
 # 文件路径
-file_path = "/home/huangj2/Documents/RAG_P2_医疗名词/01.standardization/data/SNOMED-CT/SNOMED_valid_with_synonym_comma.csv"
-# db_path = "./snomed_syn_mpnet-base-v2.db"
-# db_path = "/home/huangj2/Documents/evyd-wp1/backend/db/snomed_e5_large.db"
-# db_path = "/home/huangj2/Documents/evyd-wp1/backend/db/snomed_qwen2_1b.db"
-db_path = "/home/huangj2/Documents/RAG_P2_医疗名词/backend/db/snomed_bge_m3.db"
-# db_path = "/home/huangj2/Documents/evyd-wp1/backend/db/snomed_jina_v3.db"
-# db_path = "/home/huangj2/Documents/evyd-wp1/backend/db/snomed_openai_large.db"
+file_path = "/home/huangj2/Documents/rag-project02-medical-nlp-box/backend/data/SNOMED_valid_comma.csv"
+db_path = "/home/huangj2/Documents/rag-project02-medical-nlp-box/backend/db/snomed_bge_m3.db"
 
 # 连接到 Milvus
 client = MilvusClient(db_path)
 
-# collection_name = "concepts_only_name"
-collection_name = "concepts_with_synonym"
+collection_name = "concepts_only_name"
+# collection_name = "concepts_with_synonym"
 
 # 加载数据
 logging.info("Loading data from CSV")
 df = pd.read_csv(file_path, 
-                #  delimiter='\t', 
                  dtype=str, 
                 low_memory=False,
                  ).fillna("NA")
@@ -56,7 +50,7 @@ vector_dim = len(sample_embedding)
 # 构造Schema
 fields = [
     FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
-    FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=vector_dim),
+    FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=vector_dim), # BGE-m3 最重要
     FieldSchema(name="concept_id", dtype=DataType.VARCHAR, max_length=50),
     FieldSchema(name="concept_name", dtype=DataType.VARCHAR, max_length=200),
     FieldSchema(name="domain_id", dtype=DataType.VARCHAR, max_length=20),
@@ -66,10 +60,9 @@ fields = [
     FieldSchema(name="concept_code", dtype=DataType.VARCHAR, max_length=50),
     FieldSchema(name="valid_start_date", dtype=DataType.VARCHAR, max_length=10),
     FieldSchema(name="valid_end_date", dtype=DataType.VARCHAR, max_length=10),
-    # FieldSchema(name="invalid_reason", dtype=DataType.VARCHAR, max_length=1),    
-    # FieldSchema(name="full_name", dtype=DataType.VARCHAR, max_length=500),
-    FieldSchema(name="synonyms", dtype=DataType.VARCHAR, max_length=1000),
-    # FieldSchema(name="definitions", dtype=DataType.VARCHAR, max_length=1000),
+    # FieldSchema(name="full_name", dtype=DataType.VARCHAR, max_length=500), # FSN
+    # FieldSchema(name="synonyms", dtype=DataType.VARCHAR, max_length=1000), # 同义词
+    # FieldSchema(name="definitions", dtype=DataType.VARCHAR, max_length=1000), # 定义
     FieldSchema(name="input_file", dtype=DataType.VARCHAR, max_length=500),
 ]
 schema = CollectionSchema(fields, 
@@ -115,14 +108,13 @@ for start_idx in tqdm(range(0, len(df), batch_size), desc="Processing batches"):
         # if row['Full Name'] != "NA" and row['Full Name'] != row['concept_name']:
         #     doc_parts.append(",Full Name: " + row['Full Name'])
 
-        if row['Synonyms'] != "NA" and row['Synonyms'] != row['concept_name']:
-            doc_parts.append(", Synonyms: " + row['Synonyms'])
+        # if row['Synonyms'] != "NA" and row['Synonyms'] != row['concept_name']:
+        #     doc_parts.append(", Synonyms: " + row['Synonyms'])
 
         # if row['Definitions'] != "NA" and row['Definitions'] not in [row['concept_name'], row.get('Full Name', '')]:
         #     doc_parts.append(", Definitions: " + row['Definitions'])
 
         docs.append(" ".join(doc_parts))
-
 
     # 生成嵌入
     try:
@@ -148,13 +140,13 @@ for start_idx in tqdm(range(0, len(df), batch_size), desc="Processing batches"):
             "valid_end_date": str(row['valid_end_date']),
             # "invalid_reason": str(row['invalid_reason']),
             # "full_name": str(row['Full Name']),
-            "synonyms": str(row['Synonyms']),
+            # "synonyms": str(row['Synonyms']),
             # "definitions": str(row['Definitions']),
             "input_file": file_path
         } for idx, (_, row) in enumerate(batch_df.iterrows())
     ]
 
-    # 插入数据
+    # 插入数据 - 1024个向量条目，即1024个医疗术语（标准概念）
     try:
         res = client.insert(
             collection_name=collection_name,
@@ -172,13 +164,13 @@ query = "SOB"
 query_embeddings = embedding_function([query])
 
 
-# 搜索
+# 搜索余弦相似度最高的
 search_result = client.search(
     collection_name=collection_name,
     data=[query_embeddings[0].tolist()],
     limit=5,
     output_fields=["concept_name", 
-                   "synonyms", 
+                #    "synonyms", 
                    "concept_class_id", 
                    ]
 )
@@ -189,53 +181,9 @@ query_result = client.query(
     collection_name=collection_name,
     filter="concept_name == 'Dyspnea'",
     output_fields=["concept_name", 
-                   "synonyms", 
+                #    "synonyms", 
                    "concept_class_id", 
                    ],
     limit=5
 )
 logging.info(f"Query result for concept_name == 'Dyspnea': {query_result}")
-
-
-
-# # 搜索
-# # 获取集合的索引信息
-# index_info = client.describe_index(collection_name=collection_name,
-#                                    index_name="vector")
-# logging.info(f"Index info: {index_info}")
-
-# # 根据索引信息设置搜索参数
-# if index_info:
-#     metric_type = index_info[0].get('metric_type', 'L2')  # 默认使用 L2
-#     index_type = index_info[0].get('index_type', 'AUTOINDEX')  # 默认使用 IVF_FLAT
-# else:
-#     metric_type = 'L2'
-#     index_type = 'AUTOINDEX'
-
-# search_params = {
-#     "metric_type": metric_type,
-#     "params": {"nprobe": 10}
-# }
-
-# # 执行搜索
-# try:
-#     search_result = client.search(
-#         collection_name=collection_name,
-#         data=[query_embeddings[0].tolist()],
-#         anns_field="vector",
-#         param=search_params,
-#         limit=5,
-#         output_fields=["concept_name", "synonyms", "concept_class_id", "full_name"]
-#     )
-#     logging.info(f"Search result for '{query}': {search_result}")
-# except Exception as e:
-#     logging.error(f"Error during search: {e}")
-
-# # 查询所有匹配的实体
-# query_result = client.query(
-#     collection_name=collection_name,
-#     filter="concept_class_id == 'Condition'",
-#     output_fields=["concept_name", "synonyms", "concept_class_id", "full_name"],
-#     limit=5
-# )
-# logging.info(f"Query result for concept_class_id == 'Condition': {query_result}")

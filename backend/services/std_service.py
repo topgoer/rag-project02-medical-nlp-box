@@ -14,10 +14,10 @@ load_dotenv()
 
 class StdService:
     def __init__(self, 
-                 provider="openai",
-                 model="text-embedding-3-large",
-                 db_path="db/icd10-terms-only.db",
-                 collection_name="openai_3_large"):
+                 provider="huggingface",
+                 model="BAAI/bge-m3",
+                 db_path="db/snomed_bge_m3.db",
+                 collection_name="concepts_only_name"):
 
         # 根据 provider 字符串匹配正确的枚举值
         provider_mapping = {

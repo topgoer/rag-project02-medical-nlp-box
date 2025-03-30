@@ -19,7 +19,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 notes.txt
-*.csv
+# *.csv
+backend/data/SNOMED_valid_comma.csv
 
 # Runtime data
 pids
@@ -64,7 +65,9 @@ coverage
 .env
 
 # Exclude all .db files
-*.db
+# *.db
+backend/db/snomed_bge_m3.db
+backend/db/.snomed_bge_m3.db.lock
 
 # Parcel bundler cache
 .cache
