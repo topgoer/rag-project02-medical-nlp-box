@@ -10,9 +10,8 @@ const AbbrPage = () => {
   // Method selection
   const [method, setMethod] = useState('simple_ollama');
   const methods = {
-    simple_ollama: '简单大语言模型展开',
-    query_db_llm_rerank: '查询数据库 + 大语言模型重排',
-    llm_rank_query_db: '大语言模型展开 + 数据库标准化'
+    simple_ollama: '简单大语言模型展开（快速）',
+    llm_rank_query_db: '大语言模型展开 + 数据库标准化（更准确）'
   };
 
   // LLM options

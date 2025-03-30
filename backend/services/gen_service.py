@@ -5,15 +5,31 @@ from typing import Dict, List
 import os
 import logging
 
+# 配置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class GenService:
+    """
+    医疗文本生成服务
+    提供医疗笔记、鉴别诊断和治疗计划等医疗文本的生成功能
+    """
     def __init__(self):
         pass
         
     def _get_llm(self, llm_options: dict):
-        """Get LLM based on provider and model"""
+        """
+        根据配置获取语言模型实例
+        
+        Args:
+            llm_options: 语言模型配置选项
+            
+        Returns:
+            配置好的语言模型实例
+            
+        Raises:
+            ValueError: 当提供不支持的模型提供商时
+        """
         provider = llm_options.get("provider", "ollama")
         model = llm_options.get("model", "llama3.1:8b")
         
@@ -34,7 +50,19 @@ class GenService:
                             diagnosis: str,
                             treatment: str,
                             llm_options: dict) -> Dict:
-        """Generate a structured medical note based on provided information"""
+        """
+        生成结构化的医疗笔记
+        
+        Args:
+            patient_info: 患者信息
+            symptoms: 症状列表
+            diagnosis: 诊断结果
+            treatment: 治疗方案
+            llm_options: 语言模型配置选项
+            
+        Returns:
+            包含输入信息和生成的医疗笔记的字典
+        """
         llm = self._get_llm(llm_options)
         
         prompt = ChatPromptTemplate.from_messages([
@@ -83,7 +111,16 @@ class GenService:
     def generate_differential_diagnosis(self,
                                       symptoms: List[str],
                                       llm_options: dict) -> Dict:
-        """Generate differential diagnosis based on symptoms"""
+        """
+        根据症状生成鉴别诊断
+        
+        Args:
+            symptoms: 症状列表
+            llm_options: 语言模型配置选项
+            
+        Returns:
+            包含输入症状和生成的鉴别诊断的字典
+        """
         llm = self._get_llm(llm_options)
         
         prompt = ChatPromptTemplate.from_messages([
@@ -114,7 +151,17 @@ class GenService:
                               diagnosis: str,
                               patient_info: Dict,
                               llm_options: dict) -> Dict:
-        """Generate a detailed treatment plan"""
+        """
+        生成详细的治疗计划
+        
+        Args:
+            diagnosis: 诊断结果
+            patient_info: 患者信息
+            llm_options: 语言模型配置选项
+            
+        Returns:
+            包含输入信息和生成的治疗计划的字典
+        """
         llm = self._get_llm(llm_options)
         
         prompt = ChatPromptTemplate.from_messages([

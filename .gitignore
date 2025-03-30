@@ -20,7 +20,7 @@ yarn-debug.log*
 yarn-error.log*
 notes.txt
 # *.csv
-backend/data/SNOMED_valid_comma.csv
+backend/data/SNOMED_FULL.csv
 
 # Runtime data
 pids

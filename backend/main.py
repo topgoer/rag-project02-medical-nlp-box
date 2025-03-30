@@ -5,7 +5,6 @@ from services.ner_service import NERService
 from services.std_service import StdService
 from services.abbr_service import AbbrService
 from services.corr_service import CorrService
-# from services.model_map_service import ModelMapService
 from services.gen_service import GenService
 from typing import List, Dict
 import logging
@@ -26,7 +25,6 @@ app.add_middleware(
 
 ner_service = NERService()
 standardization_service = StdService()
-# model_map_service = ModelMapService()
 abbr_service = AbbrService()
 gen_service = GenService()
 corr_service = CorrService()
@@ -121,12 +119,14 @@ async def correct_notes(input: CorrInput):
 @app.post("/api/std")
 async def standardization(input: TextInput):
     try:
+        # 记录接收到的请求信息
         logger.info(f"Received request: text={input.text}, options={input.options}, embeddingOptions={input.embeddingOptions}")
 
-        # Extract allMedicalTerms from options and create termTypes
+        # 从选项中提取是否处理所有医学术语的标志
         all_medical_terms = input.options.pop('allMedicalTerms', False)
         term_types = {'allMedicalTerms': all_medical_terms}
 
+        # 调用命名实体识别服务处理输入文本
         ner_results = ner_service.process(input.text, input.options, term_types)
 
         # 创建标准化服务实例，使用传入的嵌入选项
@@ -137,12 +137,14 @@ async def standardization(input: TextInput):
             collection_name=input.embeddingOptions.get("collectionName", "concepts_only_name")
         )
 
-        # Ensure ner_results is a list of entities
+        # 从NER结果中获取实体列表
         entities = ner_results.get('entities', [])
 
+        # 如果没有识别到医学术语，返回空结果
         if not entities:
             return {"message": "No medical terms have been recognized", "standardized_terms": []}
 
+        # 对每个识别出的实体进行标准化处理
         standardized_results = []
         for entity in entities:
             std_result = standardization_service.process(entity['word'])
@@ -152,12 +154,14 @@ async def standardization(input: TextInput):
                 "standardized_results": std_result
             })
 
+        # 返回标准化结果
         return {
             "message": f"{len(entities)} medical terms have been recognized and standardized",
             "standardized_terms": standardized_results
         }
 
     except Exception as e:
+        # 记录错误并抛出HTTP异常
         logger.error(f"Error in standardization processing: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -186,36 +190,6 @@ async def expand_abbreviations(input: AbbrInput):
     except Exception as e:
         logger.error(f"Error in abbreviation expansion: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-# @app.post("/api/parse-schema")
-# async def parse_schema(input: SchemaInput):
-#     try:
-#         schema = model_map_service.parse_schema(input.csv, input.fileName)
-#         return schema
-#     except Exception as e:
-#         logger.error(f"Error parsing schema: {str(e)}")
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @app.post("/api/generate-mapping")
-# async def generate_mapping(input: MappingInput):
-#     try:
-#         mapping = model_map_service.generate_mapping(
-#             input.targetSchema,
-#             input.sourceSchemas
-#         )
-#         return mapping
-#     except Exception as e:
-#         logger.error(f"Error generating mapping: {str(e)}")
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# @app.post("/api/generate-sql")
-# async def generate_sql(input: MappingResult):
-#     try:
-#         sql = model_map_service.generate_sql(input.mapping)
-#         return {"sql": sql}
-#     except Exception as e:
-#         logger.error(f"Error generating SQL: {str(e)}")
-#         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/gen")
 async def generate_medical_content(input: GenInput):

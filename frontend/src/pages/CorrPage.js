@@ -6,13 +6,6 @@ const CorrPage = () => {
   const [result, setResult] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Method selection
-  const [method, setMethod] = useState('correct_spelling');
-  const methods = {
-    correct_spelling: '简单拼写纠错',
-    add_mistakes: '故意添加拼写错误（测试用）'
-  };
-
   // LLM options
   const [llmOptions, setLlmOptions] = useState({
     provider: 'ollama',
@@ -23,33 +16,11 @@ const CorrPage = () => {
     openai: 'OpenAI'
   };
 
-  // Error generation options
-  const [errorOptions, setErrorOptions] = useState({
-    probability: 0.3,
-    maxErrors: 5,
-    keyboard: 'querty'
-  });
-
   const handleLlmOptionChange = (e) => {
     const { name, value } = e.target;
     setLlmOptions(prev => ({
       ...prev,
       [name]: value
-    }));
-  };
-
-  const handleErrorOptionChange = (e) => {
-    const { name, value } = e.target;
-    let processedValue = value;
-    
-    // Convert numeric inputs to numbers
-    if (name === 'probability' || name === 'maxErrors') {
-      processedValue = parseFloat(value);
-    }
-    
-    setErrorOptions(prev => ({
-      ...prev,
-      [name]: processedValue
     }));
   };
 
@@ -63,9 +34,7 @@ const CorrPage = () => {
         },
         body: JSON.stringify({
           text: input,
-          method,
-          llmOptions,
-          errorOptions
+          llmOptions
         }),
       });
       const data = await response.json();
@@ -98,7 +67,7 @@ const CorrPage = () => {
             className="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 w-full"
             disabled={isLoading}
           >
-            {isLoading ? '处理中...' : method === 'correct_spelling' ? '纠正记录' : '添加错误'}
+            {isLoading ? '处理中...' : '纠正记录'}
           </button>
         </div>
 
@@ -106,20 +75,6 @@ const CorrPage = () => {
         <div className="bg-white shadow-md rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">选项</h2>
           
-          {/* Method Selection */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">处理方法</label>
-            <select
-              value={method}
-              onChange={(e) => setMethod(e.target.value)}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-            >
-              {Object.entries(methods).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-          </div>
-
           {/* LLM Options */}
           <div className="mb-4">
             <h3 className="text-lg font-medium mb-2">大语言模型设置</h3>
@@ -149,52 +104,6 @@ const CorrPage = () => {
               </div>
             </div>
           </div>
-
-          {/* Error Generation Options (only for add_mistakes method) */}
-          {method === 'add_mistakes' && (
-            <div className="mb-4">
-              <h3 className="text-lg font-medium mb-2">错误生成设置</h3>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">错误概率 (0-1)</label>
-                  <input
-                    type="number"
-                    name="probability"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={errorOptions.probability}
-                    onChange={handleErrorOptionChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">最大错误数量</label>
-                  <input
-                    type="number"
-                    name="maxErrors"
-                    min="1"
-                    max="10"
-                    step="1"
-                    value={errorOptions.maxErrors}
-                    onChange={handleErrorOptionChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">键盘布局</label>
-                  <select
-                    name="keyboard"
-                    value={errorOptions.keyboard}
-                    onChange={handleErrorOptionChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  >
-                    <option value="querty">QWERTY</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

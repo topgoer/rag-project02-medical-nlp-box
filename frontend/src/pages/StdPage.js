@@ -1,32 +1,32 @@
 import React, { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
 
-const StandPage = () => {
+const StdPage = () => {
   const [input, setInput] = useState('');
   const [result, setResult] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // 重新组织选项结构
+  // 重新组织选项结构，默认选中所有选项
   const [options, setOptions] = useState({
-    disease: false,
-    combineBioStructure: false,
-    medicine: false,
-    laboratory: false,
-    physicalExamination: false,
-    surgeryProcedure: false,
-    radiology: false,
-    commonMedicalObservations: false,
-    lifestyleObservations: false,
-    cognitiveBehaviorItems: false,
-    allMedicalTerms: false,
+    disease: true,
+    combineBioStructure: true,
+    medicine: true,
+    laboratory: true,
+    physicalExamination: true,
+    surgeryProcedure: true,
+    radiology: true,
+    commonMedicalObservations: true,
+    lifestyleObservations: true,
+    cognitiveBehaviorItems: true,
+    allMedicalTerms: true,
   });
 
   const [embeddingOptions, setEmbeddingOptions] = useState({
     provider: 'huggingface',
-    model: 'intfloat/multilingual-e5-large-instruct', // BGE-m3
+    model: 'BAAI/bge-m3',
     dbName: 'snomed_bge_m3',
-    collectionName: 'concepts_with_synonym'
+    collectionName: 'concepts_only_name'
   });
 
   const handleOptionChange = (e) => {
@@ -250,4 +250,4 @@ const StandPage = () => {
   );
 };
 
-export default StandPage;
+export default StdPage;

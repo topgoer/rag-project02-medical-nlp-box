@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import NERPage from './pages/NERPage';
-import StandPage from './pages/StandPage';
+import StdPage from './pages/StdPage';
 import CorrPage from './pages/CorrPage';
 import AbbrPage from './pages/AbbrPage';
 import GenPage from './pages/GenPage';
@@ -41,7 +41,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<WelcomePage />} />
             <Route path="/ner" element={<NERPage />} />
-            <Route path="/stand" element={<StandPage />} />
+            <Route path="/stand" element={<StdPage />} />
             <Route path="/corr" element={<CorrPage />} />
             <Route path="/abbr" element={<AbbrPage />} />
             <Route path="/gen" element={<GenPage />} />
