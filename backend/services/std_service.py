@@ -87,7 +87,7 @@ class StdService:
                 "vocabulary_id", "concept_class_id", "standard_concept",
                 "concept_code", "synonyms"
             ],
-            "filter": "domain_id == 'Condition'"
+            # "filter": "domain_id == 'Condition'"
         }
         
         # 搜索相似项

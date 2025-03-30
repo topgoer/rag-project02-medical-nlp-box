@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { EmbeddingOptions, TextInput } from '../components/shared/ModelOptions';
 
 const StdPage = () => {
   const [input, setInput] = useState('');
@@ -56,7 +57,11 @@ const StdPage = () => {
   };
 
   const handleEmbeddingOptionChange = (e) => {
-    setEmbeddingOptions({ ...embeddingOptions, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setEmbeddingOptions(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async () => {
@@ -91,62 +96,14 @@ const StdPage = () => {
         {/* 左侧面板：文本输入和嵌入选项 */}
         <div className="col-span-2 bg-white shadow-md rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">输入医疗术语</h2>
-          <textarea
-            className="w-full p-2 border rounded-md mb-4"
-            rows="4"
-            placeholder="请输入需要标准化的医疗术语..."
+          <TextInput
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            rows={4}
+            placeholder="请输入需要标准化的医疗术语..."
           />
           
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">嵌入提供商</label>
-              <select
-                name="provider"
-                value={embeddingOptions.provider}
-                onChange={handleEmbeddingOptionChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-              >
-                <option value="openai">OpenAI</option>
-                <option value="bedrock">Bedrock</option>
-                <option value="huggingface">HuggingFace</option>
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700">嵌入模型</label>
-              <input
-                type="text"
-                name="model"
-                value={embeddingOptions.model}
-                onChange={handleEmbeddingOptionChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700">向量数据库名称</label>
-              <input
-                type="text"
-                name="dbName"
-                value={embeddingOptions.dbName}
-                onChange={handleEmbeddingOptionChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700">集合名称</label>
-              <input
-                type="text"
-                name="collectionName"
-                value={embeddingOptions.collectionName}
-                onChange={handleEmbeddingOptionChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-              />
-            </div>
-          </div>
+          <EmbeddingOptions options={embeddingOptions} onChange={handleEmbeddingOptionChange} />
 
           <button
             onClick={handleSubmit}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { LLMOptions, TextInput } from '../components/shared/ModelOptions';
 
 const CorrPage = () => {
   const [input, setInput] = useState('');
@@ -11,10 +12,6 @@ const CorrPage = () => {
     provider: 'ollama',
     model: 'qwen2.5:7b'
   });
-  const llmProviders = {
-    ollama: 'Ollama',
-    openai: 'OpenAI'
-  };
 
   const handleLlmOptionChange = (e) => {
     const { name, value } = e.target;
@@ -54,12 +51,10 @@ const CorrPage = () => {
         {/* Left panel: Text inputs */}
         <div className="col-span-2 bg-white shadow-md rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">输入医疗记录</h2>
-          <textarea
-            className="w-full p-2 border rounded-md mb-4"
-            rows="6"
-            placeholder="请输入需要纠错的医疗记录..."
+          <TextInput
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            placeholder="请输入需要纠错的医疗记录..."
           />
 
           <button
@@ -76,34 +71,7 @@ const CorrPage = () => {
           <h2 className="text-xl font-semibold mb-4">选项</h2>
           
           {/* LLM Options */}
-          <div className="mb-4">
-            <h3 className="text-lg font-medium mb-2">大语言模型设置</h3>
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">提供商</label>
-                <select
-                  name="provider"
-                  value={llmOptions.provider}
-                  onChange={handleLlmOptionChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                >
-                  {Object.entries(llmProviders).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">模型</label>
-                <input
-                  type="text"
-                  name="model"
-                  value={llmOptions.model}
-                  onChange={handleLlmOptionChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                />
-              </div>
-            </div>
-          </div>
+          <LLMOptions options={llmOptions} onChange={handleLlmOptionChange} />
         </div>
       </div>
 

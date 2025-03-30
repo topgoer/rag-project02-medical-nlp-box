@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { TextInput } from '../components/shared/ModelOptions';
 
 const color_map = {
   'DATE': "#FF9800", // 原色
@@ -45,7 +46,6 @@ const color_map = {
   'OCCUPATION': "#880E4F", // 原色
   'COMBINED_BIO_SYMPTOM': "#FF4500",  // 为合并实体添加一个新颜色
 };
-
 
 const NERPage = () => {
   const [input, setInput] = useState('');
@@ -133,12 +133,11 @@ const NERPage = () => {
       <h1 className="text-3xl font-bold mb-6">医疗命名实体识别 🏥</h1>
       <div className="bg-white shadow-md rounded-lg p-6 mb-6">
         <h2 className="text-xl font-semibold mb-4">输入医疗文本</h2>
-        <textarea
-          className="w-full p-2 border rounded-md mb-4"
-          rows="4"
-          placeholder="请输入需要进行命名实体识别的医疗文本..."
+        <TextInput
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          rows={4}
+          placeholder="请输入需要进行命名实体识别的医疗文本..."
         />
         
         <h3 className="text-lg font-semibold mb-2">医疗术语类型</h3>

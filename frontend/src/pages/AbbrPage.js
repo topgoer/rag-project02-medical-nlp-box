@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { LLMOptions, EmbeddingOptions, TextInput } from '../components/shared/ModelOptions';
 
 const AbbrPage = () => {
   const [input, setInput] = useState('');
@@ -19,12 +20,8 @@ const AbbrPage = () => {
     provider: 'ollama',
     model: 'qwen2.5:7b'
   });
-  const llmProviders = {
-    ollama: 'Ollama',
-    openai: 'OpenAI'
-  };
 
-  // Vector DB options (reusing from StandardizationPage)
+  // Vector DB options
   const [embeddingOptions, setEmbeddingOptions] = useState({
     provider: 'huggingface',
     model: 'BAAI/bge-m3',
@@ -41,9 +38,10 @@ const AbbrPage = () => {
   };
 
   const handleEmbeddingOptionChange = (e) => {
+    const { name, value } = e.target;
     setEmbeddingOptions(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [name]: value
     }));
   };
 
@@ -80,21 +78,18 @@ const AbbrPage = () => {
         {/* Left panel: Text inputs */}
         <div className="col-span-2 bg-white shadow-md rounded-lg p-6">
           <h2 className="text-xl font-semibold mb-4">输入医疗记录</h2>
-          <textarea
-            className="w-full p-2 border rounded-md mb-4"
-            rows="6"
-            placeholder="请输入包含缩写的医疗记录..."
+          <TextInput
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            placeholder="请输入包含缩写的医疗记录..."
           />
 
           {method !== 'simple_ollama' && (
-            <textarea
-              className="w-full p-2 border rounded-md mb-4"
-              rows="2"
-              placeholder="输入上下文以获得更好的缩写展开效果..."
+            <TextInput
               value={context}
               onChange={(e) => setContext(e.target.value)}
+              rows={2}
+              placeholder="输入上下文以获得更好的缩写展开效果..."
             />
           )}
 
@@ -126,85 +121,11 @@ const AbbrPage = () => {
           </div>
 
           {/* LLM Options */}
-          <div className="mb-4">
-            <h3 className="text-lg font-medium mb-2">大语言模型设置</h3>
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">提供商</label>
-                <select
-                  name="provider"
-                  value={llmOptions.provider}
-                  onChange={handleLlmOptionChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                >
-                  {Object.entries(llmProviders).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">模型</label>
-                <input
-                  type="text"
-                  name="model"
-                  value={llmOptions.model}
-                  onChange={handleLlmOptionChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                />
-              </div>
-            </div>
-          </div>
+          <LLMOptions options={llmOptions} onChange={handleLlmOptionChange} />
 
-          {/* Vector DB Options (only show when method needs it) */}
+          {/* Vector DB Options */}
           {method !== 'simple_ollama' && (
-            <div className="mb-4">
-              <h3 className="text-lg font-medium mb-2">向量数据库设置</h3>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">嵌入提供商</label>
-                  <select
-                    name="provider"
-                    value={embeddingOptions.provider}
-                    onChange={handleEmbeddingOptionChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  >
-                    <option value="openai">OpenAI</option>
-                    <option value="bedrock">Bedrock</option>
-                    <option value="huggingface">HuggingFace</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">嵌入模型</label>
-                  <input
-                    type="text"
-                    name="model"
-                    value={embeddingOptions.model}
-                    onChange={handleEmbeddingOptionChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">向量数据库名称</label>
-                  <input
-                    type="text"
-                    name="dbName"
-                    value={embeddingOptions.dbName}
-                    onChange={handleEmbeddingOptionChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">集合名称</label>
-                  <input
-                    type="text"
-                    name="collectionName"
-                    value={embeddingOptions.collectionName}
-                    onChange={handleEmbeddingOptionChange}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                  />
-                </div>
-              </div>
-            </div>
+            <EmbeddingOptions options={embeddingOptions} onChange={handleEmbeddingOptionChange} />
           )}
         </div>
       </div>

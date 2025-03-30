@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { LLMOptions, TextInput } from '../components/shared/ModelOptions';
 
 const GenPage = () => {
   // 基础状态
@@ -32,10 +33,6 @@ const GenPage = () => {
     provider: 'ollama',
     model: 'qwen2.5:7b'
   });
-  const llmProviders = {
-    ollama: 'Ollama',
-    openai: 'OpenAI'
-  };
 
   const handlePatientInfoChange = (e) => {
     const { name, value } = e.target;
@@ -144,11 +141,10 @@ const GenPage = () => {
           {/* 症状输入 */}
           <div className="mb-4">
             <label className="block text-sm font-medium text-gray-700">症状（每行一个）</label>
-            <textarea
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-              rows="3"
+            <TextInput
               value={symptoms}
               onChange={handleSymptomsChange}
+              rows={3}
               placeholder="输入症状，每行一个..."
             />
           </div>
@@ -207,34 +203,7 @@ const GenPage = () => {
           </div>
 
           {/* LLM 选项 */}
-          <div className="mb-4">
-            <h3 className="text-lg font-medium mb-2">大语言模型设置</h3>
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">提供商</label>
-                <select
-                  name="provider"
-                  value={llmOptions.provider}
-                  onChange={handleLlmOptionChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                >
-                  {Object.entries(llmProviders).map(([key, label]) => (
-                    <option key={key} value={key}>{label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">模型</label>
-                <input
-                  type="text"
-                  name="model"
-                  value={llmOptions.model}
-                  onChange={handleLlmOptionChange}
-                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
-                />
-              </div>
-            </div>
-          </div>
+          <LLMOptions options={llmOptions} onChange={handleLlmOptionChange} />
         </div>
       </div>
 
