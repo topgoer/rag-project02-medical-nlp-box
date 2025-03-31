@@ -26,7 +26,7 @@ embedding_function = model.dense.SentenceTransformerEmbeddingFunction(
 # embedding_function = model.dense.OpenAIEmbeddingFunction(model_name='text-embedding-3-large')
 
 # 文件路径
-file_path = "/home/huangj2/Documents/rag-project02-medical-nlp-box/backend/data/SNOMED_valid_comma.csv"
+file_path = "/home/huangj2/Documents/rag-project02-medical-nlp-box/backend/data/SNOMED_5000.csv"
 db_path = "/home/huangj2/Documents/rag-project02-medical-nlp-box/backend/db/snomed_bge_m3.db"
 
 # 连接到 Milvus
