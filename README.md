@@ -33,7 +33,7 @@
    ```
 3. 运行开发服务器：
    ```bash
-   npm run dev
+   npm start
    ```
 4. 在浏览器中打开 [http://localhost:3000](http://localhost:3000)
 
