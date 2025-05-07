@@ -4,3 +4,14 @@
 
 启动后端：
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+
+-------------------------
+曾经出现问题
+/home/huangj2/.nvm/versions/node/v22.14.0/lib/node_modules/npm/lib/cli/validate-engines.js:31    throw err    ^Error: ENOENT: no such file or directory, uv_cwd    at process.wrappedCwd (node:internal/bootstrap/switches/does_own_process_state:142:28)    at process.cwd (/home/huangj2/.nvm/versions/node/v22.14.0/lib/node_modules/npm/node_modules/graceful-fs/polyfills.js:10:19)    at new Config (/home/huangj2/.nvm/versions/node/v22.14.0/lib/node_modules/npm/node_modules/@npmcli/config/lib/index.js:71:19)    at new Npm (/home/huangj2/.nvm/versions/node/v22.14.0/lib/node_modules/npm/lib/npm.js:67:19)    at module.exports (/home/huangj2/.nvm/versions/node/v22.14.0/lib/node_modules/npm/lib/cli/entry.js:21:15)    at module.exports (/home/huangj2/.nvm/versions/node/v22.14.0/lib/node_modules/npm/lib/cli/validate-engines.js:39:10)    at module.exports (/home/huangj2/.nvm/versions/node/v22.14.0/lib/node_modules/npm/lib/cli.js:12:31)    at Object.<anonymous> (/home/huangj2/.nvm/versions/node/v22.14.0/lib/node_modules/npm/bin/npm-cli.js:2:25)    at Module._compile (node:internal/modules/cjs/loader:1554:14)    at Object..js (node:internal/modules/cjs/loader:1706:10) {  errno: -2,  code: 'ENOENT',  syscall: 'uv_cwd'}Node.js v22.14.0
+解决方案
+让我们使用 nvm（Node Version Manager）来切换到一个更稳定的版本：
+nvm install 20 && nvm use 20
+现在我们已经切换到了 Node.js v20.19.1（LTS版本），让我们尝试清理一下并重新安装：
+rm -rf node_modules package-lock.json && npm install
+-------------------------
