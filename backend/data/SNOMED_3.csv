@@ -1,0 +1,4 @@
+concept_id,concept_name,domain_id,vocabulary_id,concept_class_id,standard_concept,concept_code,valid_start_date,valid_end_date,invalid_reason,FSN
+4036974,Deoxyribonuclease X,Drug,SNOMED,Substance,,130498006,20020131,20991231,,Deoxyribonuclease X (substance)
+312437,Dyspnea,Condition,SNOMED,Clinical Finding,S,267036007,20020131,20991231,,Dyspnea (finding)
+317009,Asthma,Condition,SNOMED,Disorder,S,195967001,20020131,20991231,,Asthma (disorder)
