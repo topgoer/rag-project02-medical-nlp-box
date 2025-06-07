@@ -83,7 +83,7 @@ const NERPage = () => {
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://172.20.116.213:8000/api/ner', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/ner`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

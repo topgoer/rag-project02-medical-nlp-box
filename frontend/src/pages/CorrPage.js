@@ -10,7 +10,7 @@ const CorrPage = () => {
   // LLM options
   const [llmOptions, setLlmOptions] = useState({
     provider: 'ollama',
-    model: 'qwen2.5:7b'
+    model: 'qwen3:8b'
   });
 
   const handleLlmOptionChange = (e) => {
@@ -24,7 +24,7 @@ const CorrPage = () => {
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://172.20.116.213:8000/api/corr', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/corr`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

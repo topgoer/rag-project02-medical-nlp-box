@@ -18,7 +18,7 @@ const AbbrPage = () => {
   // LLM options
   const [llmOptions, setLlmOptions] = useState({
     provider: 'ollama',
-    model: 'qwen2.5:7b'
+    model: 'qwen3:8b'
   });
 
   // Vector DB options
@@ -48,7 +48,7 @@ const AbbrPage = () => {
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://172.20.116.213:8000/api/abbr', {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/abbr`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

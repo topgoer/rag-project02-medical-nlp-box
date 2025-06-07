@@ -1,4 +1,4 @@
-from pymilvus import MilvusClient
+from pymilvus import connections, Collection, FieldSchema, CollectionSchema, DataType, utility
 from dotenv import load_dotenv
 from utils.embedding_factory import EmbeddingFactory
 from utils.embedding_config import EmbeddingProvider, EmbeddingConfig
@@ -50,9 +50,59 @@ class StdService:
         self.embedding_func = EmbeddingFactory.create_embedding_function(config)
         
         # 连接 Milvus
-        self.client = MilvusClient(db_path)
-        self.collection_name = collection_name
-        self.client.load_collection(self.collection_name)
+        try:
+            # Connect to Milvus server
+            connections.connect(
+                alias="default",
+                host="localhost",
+                port="19530"
+            )
+            
+            # Define collection schema
+            fields = [
+                FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
+                FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=1024),  # BGE-m3 dimension
+                FieldSchema(name="concept_id", dtype=DataType.VARCHAR, max_length=50),
+                FieldSchema(name="concept_name", dtype=DataType.VARCHAR, max_length=200),
+                FieldSchema(name="domain_id", dtype=DataType.VARCHAR, max_length=20),
+                FieldSchema(name="vocabulary_id", dtype=DataType.VARCHAR, max_length=20),
+                FieldSchema(name="concept_class_id", dtype=DataType.VARCHAR, max_length=20),
+                FieldSchema(name="standard_concept", dtype=DataType.VARCHAR, max_length=1),
+                FieldSchema(name="concept_code", dtype=DataType.VARCHAR, max_length=50),
+                FieldSchema(name="valid_start_date", dtype=DataType.VARCHAR, max_length=10),
+                FieldSchema(name="valid_end_date", dtype=DataType.VARCHAR, max_length=10),
+                FieldSchema(name="input_file", dtype=DataType.VARCHAR, max_length=500),
+            ]
+            schema = CollectionSchema(fields, "SNOMED-CT Concepts")
+            
+            # Create collection if it doesn't exist
+            if not utility.has_collection(collection_name):
+                logger.info(f"Creating collection: {collection_name}")
+                self.collection = Collection(collection_name, schema)
+                # Create index
+                index_params = {
+                    "metric_type": "COSINE"
+                }
+                self.collection.create_index("vector", index_params)
+                logger.info("Index created successfully")
+            else:
+                logger.info(f"Using existing collection: {collection_name}")
+                self.collection = Collection(collection_name)
+                # Check if index exists
+                if not self.collection.has_index():
+                    logger.info("Creating index for existing collection")
+                    index_params = {
+                        "metric_type": "COSINE"
+                    }
+                    self.collection.create_index("vector", index_params)
+                    logger.info("Index created successfully")
+            
+            # Load collection after ensuring index exists
+            self.collection.load()
+            logger.info(f"Successfully connected to Milvus and loaded collection: {collection_name}")
+        except Exception as e:
+            logger.error(f"Failed to connect to Milvus: {e}")
+            raise
 
     def search_similar_terms(self, query: str, limit: int = 5) -> List[Dict]:
         """
@@ -63,53 +113,52 @@ class StdService:
             limit: 返回结果的最大数量
             
         Returns:
-            包含相似术语信息的列表，每个术语包含：
-            - concept_id: 概念ID
-            - concept_name: 概念名称
-            - domain_id: 领域ID
-            - vocabulary_id: 词汇表ID
-            - concept_class_id: 概念类别ID
-            - standard_concept: 是否标准概念
-            - concept_code: 概念代码
-            - synonyms: 同义词
-            - distance: 相似度距离
+            包含相似术语信息的列表
         """
         # 获取查询的向量表示
         query_embedding = self.embedding_func.embed_query(query)
         
-        # 设置搜索参数
+        # 搜索参数
         search_params = {
-            "collection_name": self.collection_name,
-            "data": [query_embedding],
-            "limit": limit,
-            "output_fields": [
-                "concept_id", "concept_name", "domain_id", 
-                "vocabulary_id", "concept_class_id", "standard_concept",
-                "concept_code", "synonyms"
-            ],
-            # "filter": "domain_id == 'Condition'"
+            "metric_type": "COSINE",
+            "params": {"nprobe": 10}
         }
         
-        # 搜索相似项
-        search_result = self.client.search(**search_params)
+        # 执行搜索
+        results = self.collection.search(
+            data=[query_embedding],
+            anns_field="vector",
+            param=search_params,
+            limit=limit,
+            output_fields=[
+                "concept_id", "concept_name", "domain_id", 
+                "vocabulary_id", "concept_class_id", "standard_concept",
+                "concept_code"
+            ]
+        )
 
-        results = []
-        for hit in search_result[0]:
-            results.append({
-                "concept_id": hit['entity'].get('concept_id'),
-                "concept_name": hit['entity'].get('concept_name'),
-                "domain_id": hit['entity'].get('domain_id'),
-                "vocabulary_id": hit['entity'].get('vocabulary_id'),
-                "concept_class_id": hit['entity'].get('concept_class_id'),
-                "standard_concept": hit['entity'].get('standard_concept'),
-                "concept_code": hit['entity'].get('concept_code'),
-                "synonyms": hit['entity'].get('synonyms'),
-                "distance": float(hit['distance'])
+        # 处理结果
+        processed_results = []
+        for hits in results:
+            for hit in hits:
+                processed_results.append({
+                    "concept_id": hit.entity.get('concept_id'),
+                    "concept_name": hit.entity.get('concept_name'),
+                    "domain_id": hit.entity.get('domain_id'),
+                    "vocabulary_id": hit.entity.get('vocabulary_id'),
+                    "concept_class_id": hit.entity.get('concept_class_id'),
+                    "standard_concept": hit.entity.get('standard_concept'),
+                    "concept_code": hit.entity.get('concept_code'),
+                    "distance": float(hit.distance)
             })
 
-        return results
+        return processed_results
 
     def __del__(self):
-        """清理资源，释放集合"""
-        if hasattr(self, 'client') and hasattr(self, 'collection_name'):
-            self.client.release_collection(self.collection_name)
+        """清理资源"""
+        try:
+            if hasattr(self, 'collection'):
+                self.collection.release()
+            connections.disconnect("default")
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")

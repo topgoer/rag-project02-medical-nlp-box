@@ -40,7 +40,7 @@ class BaseInputModel(BaseModel):
     llmOptions: Dict[str, str] = Field(
         default_factory=lambda: {
             "provider": "ollama",
-            "model": "qwen2.5:7b"
+            "model": "qwen3:8b"
         },
         description="大语言模型配置选项"
     )

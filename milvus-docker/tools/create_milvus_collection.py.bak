@@ -1,0 +1,169 @@
+import argparse
+import sys
+import os
+import time
+from pymilvus import model, connections, Collection, CollectionSchema, FieldSchema, DataType, utility
+from pymilvus import MilvusClient
+import pandas as pd
+from tqdm import tqdm
+import logging
+from dotenv import load_dotenv
+load_dotenv()
+import torch
+
+# 设置日志
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# 命令行参数解析
+parser = argparse.ArgumentParser(description="Create Milvus collection from CSV file with optional schema inference.")
+parser.add_argument('--csv', type=str, default="backend/data/万条金融标准术语.csv", help="Path to the CSV file.")
+parser.add_argument('--collection', type=str, default="financial_terms", help="Milvus collection name.")
+parser.add_argument('--embed-col', type=str, default=None, help="Column name to use for embedding. If not provided, will prompt.")
+parser.add_argument('--infer-schema', action='store_true', help="Automatically infer schema from CSV.")
+args = parser.parse_args()
+
+# 检查是否有可用的 GPU
+device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+logging.info(f"Using device: {device}")
+
+# 初始化嵌入函数
+embedding_function = model.dense.SentenceTransformerEmbeddingFunction(
+    model_name='BAAI/bge-m3',
+    device=device,
+    trust_remote_code=True,
+    batch_size=32
+)
+
+# 文件路径和集合名
+file_path = args.csv
+collection_name = args.collection
+
+# 连接到 Milvus Docker 容器
+client = MilvusClient(
+    uri="http://localhost:19530"
+)
+
+# 加载数据
+logging.info(f"Loading data from CSV: {file_path}")
+df = pd.read_csv(file_path, dtype=str, low_memory=False).fillna("NA")
+
+# 自动推断 schema
+if args.infer_schema:
+    print("\n[自动推断 Milvus Schema]")
+    inferred_fields = []
+    for col in df.columns:
+        sample_val = df[col].iloc[0]
+        # 推断类型和最大长度
+        if col.lower() == 'id':
+            inferred_fields.append(FieldSchema(name=col, dtype=DataType.INT64, is_primary=True, auto_id=True))
+        elif sample_val.replace('.', '', 1).isdigit():
+            # 简单判断是否为数字
+            inferred_fields.append(FieldSchema(name=col, dtype=DataType.VARCHAR, max_length=50))
+        else:
+            max_len = max(df[col].astype(str).map(len).max(), 10)
+            max_len = min(max_len, 1000)
+            inferred_fields.append(FieldSchema(name=col, dtype=DataType.VARCHAR, max_length=max_len))
+    # 预留向量字段，后续插入
+    sample_doc = "Sample Text"
+    sample_embedding = embedding_function([sample_doc])[0]
+    vector_dim = len(sample_embedding)
+    inferred_fields.insert(1, FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=vector_dim))
+    print("推断的 schema 字段:")
+    for f in inferred_fields:
+        print(f"- {f.name}: {f.dtype} (max_length={getattr(f, 'max_length', '-')})")
+    # 选择 embedding 列
+    embed_col = args.embed_col
+    if not embed_col or embed_col not in df.columns:
+        print("可选的列:", list(df.columns))
+        embed_col = input("请输入用于 embedding 的列名: ").strip()
+        if embed_col not in df.columns:
+            print("[错误] 该列不存在于 CSV 中。退出。")
+            sys.exit(1)
+    print(f"将使用列 '{embed_col}' 生成 embedding。\n")
+    confirm = input("请确认 schema 是否正确，继续请按 y，退出请按 n: ").strip().lower()
+    if confirm != 'y':
+        print("用户取消操作。退出。")
+        sys.exit(0)
+    fields = inferred_fields
+else:
+    # 默认 schema
+    sample_doc = "Sample Text"
+    sample_embedding = embedding_function([sample_doc])[0]
+    vector_dim = len(sample_embedding)
+    fields = [
+        FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
+        FieldSchema(name="vector", dtype=DataType.FLOAT_VECTOR, dim=vector_dim),
+        FieldSchema(name="term", dtype=DataType.VARCHAR, max_length=500),
+        FieldSchema(name="definition", dtype=DataType.VARCHAR, max_length=1000),
+        FieldSchema(name="input_file", dtype=DataType.VARCHAR, max_length=500),
+    ]
+    embed_col = args.embed_col or "term"
+    if embed_col not in df.columns:
+        print(f"[错误] 默认 embedding 列 '{embed_col}' 不存在于 CSV 中。请用 --embed-col 指定。")
+        sys.exit(1)
+
+schema = CollectionSchema(fields, "Auto-inferred or default schema", enable_dynamic_field=True)
+
+# 如果集合已存在，先删除
+if client.has_collection(collection_name):
+    client.drop_collection(collection_name)
+    logging.info(f"Dropped existing collection: {collection_name}")
+
+# 创建新集合
+client.create_collection(
+    collection_name=collection_name,
+    schema=schema
+)
+logging.info(f"Created new collection: {collection_name}")
+
+# 在创建集合后添加索引
+index_params = client.prepare_index_params()
+index_params.add_index(
+    field_name="vector",
+    index_type="AUTOINDEX",
+    metric_type="COSINE"
+)
+
+client.create_index(
+    collection_name=collection_name,
+    index_params=index_params
+)
+
+# 加载集合到内存
+client.load_collection(collection_name)
+logging.info(f"Loaded collection: {collection_name}")
+
+batch_size = 2048
+
+def truncate_string(s, max_length):
+    if max_length is None:
+        return str(s)
+    return str(s)[:max_length] if len(str(s)) > max_length else str(s)
+
+for start_idx in tqdm(range(0, len(df), batch_size), desc="Processing batches"):
+    end_idx = min(start_idx + batch_size, len(df))
+    batch_df = df.iloc[start_idx:end_idx]
+    docs = [row[embed_col] for _, row in batch_df.iterrows()]
+    try:
+        embeddings = embedding_function(docs)
+        logging.info(f"Generated embeddings for batch {start_idx // batch_size + 1}")
+    except Exception as e:
+        logging.error(f"Error generating embeddings for batch {start_idx // batch_size + 1}: {e}")
+        continue
+    data = []
+    for idx, (_, row) in enumerate(batch_df.iterrows()):
+        item = {col: truncate_string(row[col], getattr(f, 'max_length', 1000)) for col, f in zip(df.columns, fields) if hasattr(f, 'max_length')}
+        item["vector"] = embeddings[idx]
+        item["input_file"] = truncate_string(file_path, 500)
+        data.append(item)
+    try:
+        res = client.insert(
+            collection_name=collection_name,
+            data=data
+        )
+        logging.info(f"Inserted batch {start_idx // batch_size + 1} into collection: {collection_name}")
+        print(f"Current collection count: {client.num_entities(collection_name)}")
+    except Exception as e:
+        logging.error(f"Error inserting batch {start_idx // batch_size + 1}: {e}")
+
+logging.info(f"Data import completed for collection: {collection_name}") 
