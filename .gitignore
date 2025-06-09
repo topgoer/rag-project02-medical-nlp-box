@@ -117,7 +117,7 @@ backend/db/*.db
 backend/db/*.db.backup
 backend/volumes/
 backup/
-milvus-docker/data/
+milvus-docker/data/SNOMED_ALL.csv
 milvus-docker/volumes/
 temp/
 

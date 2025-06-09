@@ -161,6 +161,7 @@ schema = CollectionSchema(fields, "Auto-inferred or default schema", enable_dyna
 if utility.has_collection(collection_name):
     logging.info(f"Collection {collection_name} already exists. Skipping import.")
     collection = Collection(collection_name)
+    collection.load()
 else:
     # 创建新集合
     collection = Collection(name=collection_name, schema=schema)
